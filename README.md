@@ -66,3 +66,73 @@ Test your CLI application thoroughly to ensure it works as expected. Fix any bug
 
 Step 10: Documentation
 Document your code using comments and docstrings to explain how it works.
+
+STEP-BY-STEP GUIDE TO planning your database schema:
+
+Identify Data Entities:
+Start by identifying the main data entities or objects in your project. In this case, you have:
+
+Users
+Tasks
+Categories
+
+Define Relationships:
+Determine how these data entities are related to each other.
+
+Consider the following relationships:
+
+A user can have multiple tasks (one-to-many relationship).
+Each task can belong to one category, but a category can have multiple tasks (one-to-many relationship between Tasks and Categories).
+
+Design Tables:
+For each data entity, design a table that represents it. Here's a rough outline of what the tables might look like:
+
+Users Table:
+
+Columns:
+User ID (Primary Key)
+Username
+Password (hashed and salted for security)
+
+Tasks Table:
+
+Columns:
+Task ID (Primary Key)
+User ID (Foreign Key to Users)
+Task Name
+Description
+Due Date (Nullable)
+Priority (e.g., high, medium, low)
+Category ID (Foreign Key to Categories)
+
+Categories Table:
+
+Columns:
+Category ID (Primary Key)
+Category Name
+Primary Keys and Foreign Keys:
+
+User ID in the Users table should be the primary key.
+Task ID in the Tasks table and Category ID in the Categories table should be primary keys.
+User ID in the Tasks table and Category ID in the Tasks table should be foreign keys linking to the Users and Categories tables, respectively.
+
+Normalization:
+Consider normalizing your tables to avoid data redundancy. For example, you might create a separate Users table to store user information and link tasks to users using their unique User IDs.
+
+Indexing:
+Depending on your application's query patterns, you may want to consider indexing certain columns, such as User ID and Category ID, to improve query performance.
+
+Data Integrity Constraints:
+Define any necessary data integrity constraints. For example, ensure that a task cannot be assigned to a non-existent user or category.
+
+CLI Commands:
+Plan the CLI commands and options that users will use to interact with your Task Manager. For example:
+
+add-task: Adds a new task with specified details.
+view-tasks: Displays a list of tasks, optionally filtered by category or priority.
+update-task: Allows users to update task details.
+delete-task: Removes a task from the database.
+add-category: Adds a new category for task classification.
+
+Algorithm for Sorting:
+Decide on the algorithm you will use to sort tasks based on priority or due date. You may want to implement sorting methods for tasks when users request them.
