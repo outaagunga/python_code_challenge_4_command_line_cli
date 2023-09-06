@@ -38,3 +38,31 @@ Test the CLI application thoroughly to ensure it works as expected.
 Organize the code into separate modules for database models, CLI commands, and utilities.
 
 Document the code using comments and docstrings.
+
+JUST FOR MY CONSUMPTION (Not yours please)
+
+Step 3: Plan Your Database Schema
+Before you write any code, plan your database schema. This means deciding what tables you need, their relationships, and the data they will store. This planning is essential because you'll be using SQLAlchemy ORM to create and modify the database.
+...........................
+
+Step 5: Define Your Database Models
+Create Python classes to define your database models. These classes will represent tables in your database. Use SQLAlchemy ORM to define relationships between these tables (one-to-one, one-to-many, many-to-many).
+
+Step 6: Create Your CLI Application
+Create a separate module for your CLI application. You'll use libraries like Click or Fire to help with CLI functionality.
+
+Define commands and options in your CLI application. Think about how users will interact with your program through the command line.
+
+Step 7: Implement an Algorithm
+Choose one or more algorithms from your Data Structures and Algorithms learning and implement them within your CLI application. Ensure they solve a real-world problem related to your project.
+
+Step 8: Package Structure and Best Practices
+Organize your project into a proper package structure. Place related code in separate modules.
+
+Ensure you're using lists, dictionaries, and tuples where appropriate in your code.
+
+Step 9: Testing and Debugging
+Test your CLI application thoroughly to ensure it works as expected. Fix any bugs or issues that you encounter.
+
+Step 10: Documentation
+Document your code using comments and docstrings to explain how it works.
