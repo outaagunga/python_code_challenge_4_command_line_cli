@@ -1,9 +1,16 @@
 # models.py
 from sqlalchemy import Column, Integer, String, ForeignKey, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
 
 Base = declarative_base()
+
+# Define your SQLAlchemy engine and session here
+DATABASE_URL = "sqlite:///notes.db"
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
+db_session = Session()
 
 note_tag_association = Table(
     "note_tag_association",
