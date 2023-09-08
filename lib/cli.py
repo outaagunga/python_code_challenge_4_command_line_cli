@@ -27,7 +27,10 @@ def main():
         add_note(args.title, args.content, args.category, tags)
     elif args.command == "list":
         list_notes()
-    # Add handling for other commands
+    elif args.command is None:
+        parser.print_help()
+    else:
+        print("Invalid command. Please try again.")
 
 if __name__ == "__main__":
     main()

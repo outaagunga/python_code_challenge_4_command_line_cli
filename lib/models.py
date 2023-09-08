@@ -31,7 +31,7 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True)
-    notes = relationship("Note", secondary=note_tag_association)
+    notes = relationship("Note", secondary=note_tag_association, back_populates="tags")
 
 class Note(Base):
     __tablename__ = "notes"
@@ -41,4 +41,4 @@ class Note(Base):
     content = Column(String)
     category_id = Column(Integer, ForeignKey("categories.id"))
     category = relationship("Category", back_populates="notes")
-    tags = relationship("Tag", secondary=note_tag_association)
+    tags = relationship("Tag", secondary=note_tag_association, back_populates="notes")
