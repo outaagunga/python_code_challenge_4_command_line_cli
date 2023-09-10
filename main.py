@@ -1,9 +1,43 @@
 import click
-from lib.models import User, Expense, Category
-from lib.database import init_database
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-session = init_database()
+# Database setup
+engine = create_engine('sqlite:///expense_tracker.db')
+Session = sessionmaker(bind=engine)
+session = Session()
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    expenses = relationship('Expense', back_populates='user')
+
+class Expense(Base):
+    __tablename__ = 'expenses'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    amount = Column(Float, nullable=False)
+    category_id = Column(Integer, ForeignKey('categories.id'))
+    category = relationship('Category', back_populates='expenses')
+    user_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship('User', back_populates='expenses')
+
+class Category(Base):
+    __tablename__ = 'categories'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True, nullable=False)
+    expenses = relationship('Expense', back_populates='category')
+
+# Helper functions
+def init_database():
+    Base.metadata.create_all(engine)
 
 def print_help():
     click.echo("Available commands:")
@@ -18,9 +52,9 @@ def print_help():
 @click.command()
 def cli():
     click.echo("Welcome to the Expense Tracker!")
-    print_help()  # Print available commands initially
+    init_database()  # Initialize the database
     while True:
-        user_input = click.prompt("Enter a command:")
+        user_input = click.prompt("Enter a command (type 'help' for available commands):")
         if user_input == 'help':
             print_help()
         elif user_input == 'add':
