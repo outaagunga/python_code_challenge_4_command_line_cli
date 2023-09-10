@@ -39,6 +39,18 @@ Organize the code into separate modules for database models, CLI commands, and u
 
 Document the code using comments and docstrings.
 
+In the provided code, there are several files and modules included. Here's a breakdown of the files and modules you can see in the code:
+
+main.py: This is the main application script.
+commands.py: This module contains functions for adding and listing notes.
+config.py: Contains a constant DATABASE_URL.
+database.py: Initializes the database and runs Alembic migrations.
+models.py: Defines the SQLAlchemy models for categories, tags, and notes.
+alembic.ini: Alembic configuration file for database migrations.
+cli.py: Command-line interface for the application.
+env.py: Used by Alembic for database migrations.
+lib (a directory): Contains various modules and packages used by the application.
+
 JUST FOR MY CONSUMPTION (Not yours please)
 
 Step 3: Plan Your Database Schema

@@ -1,6 +1,6 @@
-# cli.py
 import argparse
-from lib.commands import add_note, list_notes
+import sys
+from lib.commands import add_note, list_notes, db_session
 
 def create_parser():
     parser = argparse.ArgumentParser(description="CLI Note-Taking Application")
@@ -8,10 +8,10 @@ def create_parser():
 
     # 'add' subcommand
     add_parser = subparsers.add_parser("add", help="Add a new note")
-    add_parser.add_argument("title", help="Note title")
-    add_parser.add_argument("content", help="Note content")
-    add_parser.add_argument("category", help="Category name")
-    add_parser.add_argument("tags", help="Tags (comma-separated)")
+    add_parser.add_argument("title", type=str, help="Note title")
+    add_parser.add_argument("content", type=str, help="Note content")
+    add_parser.add_argument("category", type=str, help="Category name")
+    add_parser.add_argument("tags", type=str, help="Tags (comma-separated)")
 
     # 'list' subcommand
     list_parser = subparsers.add_parser("list", help="List all notes")
@@ -24,9 +24,13 @@ def main():
 
     if args.command == "add":
         tags = [tag.strip() for tag in args.tags.split(",")]
-        add_note(args.title, args.content, args.category, tags)
+        add_note(args.title, args.content, args.category, tags, db_session)
     elif args.command == "list":
-        list_notes()
+        list_notes(db_session)
+    elif args.command == "exit":
+        print("Exiting the application.")
+        db_session.close()  # Close the database session before exiting
+        sys.exit(0)  # Exit the application gracefully
     elif args.command is None:
         parser.print_help()
     else:
