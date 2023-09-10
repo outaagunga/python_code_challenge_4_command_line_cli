@@ -1,122 +1,177 @@
-import argparse
-import sys
-from lib.commands import add_note, list_notes, view_note, edit_note, delete_note, clear_notes, NoteNotFoundError, db_session
+import click
+from lib.models import User, Expense, Category
+from lib.database import init_database
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-def create_parser():
-    parser = argparse.ArgumentParser(description="CLI Note-Taking Application")
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+session = init_database()
 
-    # 'add' subcommand
-    add_parser = subparsers.add_parser("add", help="Add a new note")
+def print_help():
+    click.echo("Available commands:")
+    click.echo("  add - Add a user or expense")
+    click.echo("  list - List users or expenses")
+    click.echo("  view - View user details or expense details")
+    click.echo("  edit - Edit user or expense")
+    click.echo("  delete - Delete user or expense")
+    click.echo("  sort - Sort expenses by category")
+    click.echo("  exit - Exit the program")
 
-    # 'list' subcommand
-    subparsers.add_parser("list", help="List all notes")
-
-    # 'view' subcommand
-    view_parser = subparsers.add_parser("view", help="View a note")
-    view_parser.add_argument("title", type=str, help="Title of the note to view")
-
-    # 'edit' subcommand
-    edit_parser = subparsers.add_parser("edit", help="Edit a note")
-    edit_parser.add_argument("title", type=str, help="Title of the note to edit")
-    edit_parser.add_argument("new_content", type=str, help="New content for the note")
-
-    # 'delete' subcommand
-    delete_parser = subparsers.add_parser("delete", help="Delete a note")
-    delete_parser.add_argument("title", type=str, help="Title of the note to delete")
-
-    # 'clear' subcommand
-    subparsers.add_parser("clear", help="Clear all notes")
-
-    # 'exit' subcommand
-    subparsers.add_parser("exit", help="Exit the application")
-
-    return parser
-
-def print_available_commands():
-    print("Available commands:")
-    print("  add    - Add a new note")
-    print("  list   - List all notes")
-    print("  view   - View a note")
-    print("  edit   - Edit a note")
-    print("  delete - Delete a note")
-    print("  clear  - Clear all notes")
-    print("  exit   - Exit the application")
-    print()
-
-def main():
-    parser = create_parser()
-
-    # Print available commands initially
-    print_available_commands()
-
+@click.command()
+def cli():
+    click.echo("Welcome to the Expense Tracker!")
+    print_help()  # Print available commands initially
     while True:
-        # Read user input as a single line
-        user_input = input("Enter a command: ").strip()
-
-        if not user_input:
-            continue
-
-        # Split user input into command and arguments
-        user_args = user_input.split()
-        user_command = user_args[0]
-
-        # Check if the user entered 'exit'
-        if user_command == 'exit':
-            print("Exiting the application.")
-            db_session.close()  # Close the database session before exiting
-            sys.exit(0)  # Exit the application gracefully
-
-        if user_command == "add":
-            # Prompt the user for required arguments one at a time
-            title = input("Enter note title: ").strip()
-            content = input("Enter note content: ").strip()
-            category = input("Enter category: ").strip()
-            tags = input("Enter tags (comma-separated): ").strip()
-
-            tags = [tag.strip() for tag in tags.split(",")]
-
-            # Call the add_note function with the collected information
-            add_note(title, content, category, tags, session=db_session)
-            print("Note added successfully.")
+        user_input = click.prompt("Enter a command:")
+        if user_input == 'help':
+            print_help()
+        elif user_input == 'add':
+            add()
+        elif user_input == 'list':
+            list_entities()
+        elif user_input == 'view':
+            view()
+        elif user_input == 'edit':
+            edit()
+        elif user_input == 'delete':
+            delete()
+        elif user_input == 'sort':
+            sort()
+        elif user_input == 'exit':
+            exit_program()
+            break
         else:
-            try:
-                args = parser.parse_args(user_args)
-            except SystemExit:
-                print("Invalid command. Please try again.")
-                continue
+            click.echo("Invalid command. Type 'help' for available commands.")
 
-            # Handle other commands (list, view, edit, delete, clear)
-            if args.command == "list":
-                list_notes(session=db_session)
-            elif args.command == "view":
-                try:
-                    content = view_note(args.title, session=db_session)
-                    print(f"Content of '{args.title}':")
-                    print(content)
-                except NoteNotFoundError as e:
-                    print(str(e))
-            elif args.command == "edit":
-                try:
-                    edit_note(args.title, args.new_content, session=db_session)
-                    print(f"'{args.title}' edited successfully.")
-                except NoteNotFoundError as e:
-                    print(str(e))
-            elif args.command == "delete":
-                try:
-                    delete_note(args.title, session=db_session)
-                    print(f"'{args.title}' deleted successfully.")
-                except NoteNotFoundError as e:
-                    print(str(e))
-            elif args.command == "clear":
-                confirmation = input("Are you sure you want to clear all notes? (yes/no): ").strip().lower()
-                if confirmation == "yes":
-                    clear_notes(session=db_session)
-                    print("All notes cleared.")
-                else:
-                    print("Clear operation canceled.")
+def add():
+    entity = click.prompt("Select 'user' or 'expense'", type=click.Choice(["user", "expense"]))
+    if entity == "user":
+        username = click.prompt("Enter username")
+        try:
+            user = User(username=username)
+            session.add(user)
+            session.commit()
+            click.echo(f"User {username} added!")
+        except IntegrityError:
+            session.rollback()
+            click.echo(f"Error: Username {username} already exists.")
+    elif entity == "expense":
+        name = click.prompt("Enter expense name")
+        amount = click.prompt("Enter expense amount", type=float)
+        category_name = click.prompt("Enter expense category")
+        category = session.query(Category).filter_by(name=category_name).first()
+        if category is None:
+            click.echo("Error: Category does not exist.")
+            return
+        try:
+            expense = Expense(name=name, amount=amount, category=category)
+            session.add(expense)
+            session.commit()
+            click.echo(f"Expense added: {expense.name}, ${expense.amount}, Category: {expense.category.name}")
+        except IntegrityError:
+            session.rollback()
+            click.echo("Error: Invalid input or category does not exist.")
+
+def list_entities():
+    entity = click.prompt("Select 'user' or 'expense'", type=click.Choice(["user", "expense"]))
+    if entity == "user":
+        users = session.query(User).all()
+        click.echo("Users:")
+        for user in users:
+            click.echo(f"{user.id}: {user.username}")
+    elif entity == "expense":
+        expenses = session.query(Expense).all()
+        click.echo("Expenses:")
+        for expense in expenses:
+            click.echo(f"{expense.id}: {expense.name}, ${expense.amount}, Category: {expense.category.name}")
+
+def view():
+    entity = click.prompt("Select 'user' or 'expense'", type=click.Choice(["user", "expense"]))
+    try:
+        entity_id = click.prompt("Enter the ID of the entity to view", type=int)
+        if entity == "user":
+            user = session.query(User).get(entity_id)
+            if user:
+                click.echo(f"User details: {user.id}: {user.username}")
             else:
-                print("Invalid command. Please try again.")
+                click.echo("User not found.")
+        elif entity == "expense":
+            expense = session.query(Expense).get(entity_id)
+            if expense:
+                click.echo(f"Expense details: {expense.id}: {expense.name}, ${expense.amount}, Category: {expense.category.name}")
+            else:
+                click.echo("Expense not found.")
+    except SQLAlchemyError:
+        click.echo("Error: Invalid input or entity does not exist.")
+
+def edit():
+    entity = click.prompt("Select 'user' or 'expense'", type=click.Choice(["user", "expense"]))
+    try:
+        entity_id = click.prompt("Enter the ID of the entity to edit", type=int)
+        if entity == "user":
+            user = session.query(User).get(entity_id)
+            if user:
+                new_username = click.prompt("Enter new username", default=user.username)
+                user.username = new_username
+                session.commit()
+                click.echo(f"User {user.id} updated!")
+            else:
+                click.echo("User not found.")
+        elif entity == "expense":
+            expense = session.query(Expense).get(entity_id)
+            if expense:
+                new_name = click.prompt("Enter new expense name", default=expense.name)
+                new_amount = click.prompt("Enter new expense amount", default=expense.amount, type=float)
+                new_category = click.prompt("Enter new expense category", default=expense.category.name)
+                category = session.query(Category).filter_by(name=new_category).first()
+                if category is None:
+                    click.echo("Error: Category does not exist.")
+                    return
+                expense.name = new_name
+                expense.amount = new_amount
+                expense.category = category
+                session.commit()
+                click.echo(f"Expense {expense.id} updated!")
+            else:
+                click.echo("Expense not found.")
+    except SQLAlchemyError:
+        session.rollback()
+        click.echo("Error: Invalid input or entity does not exist.")
+
+def delete():
+    entity = click.prompt("Select 'user' or 'expense'", type=click.Choice(["user", "expense"]))
+    try:
+        entity_id = click.prompt("Enter the ID of the entity to delete", type=int)
+        if entity == "user":
+            user = session.query(User).get(entity_id)
+            if user:
+                session.delete(user)
+                session.commit()
+                click.echo(f"User {user.id} deleted!")
+            else:
+                click.echo("User not found.")
+        elif entity == "expense":
+            expense = session.query(Expense).get(entity_id)
+            if expense:
+                session.delete(expense)
+                session.commit()
+                click.echo(f"Expense {expense.id} deleted!")
+            else:
+                click.echo("Expense not found.")
+    except SQLAlchemyError:
+        session.rollback()
+        click.echo("Error: Invalid input or entity does not exist.")
+
+def sort():
+    try:
+        expenses = session.query(Expense).order_by(Expense.category_id).all()
+        click.echo("Expenses (sorted by category):")
+        for expense in expenses:
+            click.echo(f"{expense.id}: {expense.name}, ${expense.amount}, Category: {expense.category.name}")
+    except SQLAlchemyError:
+        click.echo("Error: Unable to retrieve and sort expenses.")
+
+def exit_program():
+    click.echo("Exiting the program.")
+    session.close()
 
 if __name__ == "__main__":
-    main()
+    cli()

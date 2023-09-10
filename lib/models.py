@@ -1,44 +1,31 @@
-# models.py
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
-from sqlalchemy.orm import relationship, sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine
+# lib/models.py
+
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
-# Define your SQLAlchemy engine and session here
-DATABASE_URL = "sqlite:///notes.db"
-engine = create_engine(DATABASE_URL)
-Session = sessionmaker(bind=engine)
-db_session = Session()
+class User(Base):
+    __tablename__ = 'users'
 
-note_tag_association = Table(
-    "note_tag_association",
-    Base.metadata,
-    Column("note_id", Integer, ForeignKey("notes.id")),
-    Column("tag_id", Integer, ForeignKey("tags.id")),
-)
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    expenses = relationship('Expense', back_populates='user')
+
+class Expense(Base):
+    __tablename__ = 'expenses'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    amount = Column(Float, nullable=False)
+    category_id = Column(Integer, ForeignKey('categories.id'))
+    category = relationship('Category', back_populates='expenses')
+    user_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship('User', back_populates='expenses')
 
 class Category(Base):
-    __tablename__ = "categories"
+    __tablename__ = 'categories'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, unique=True)
-    notes = relationship("Note", back_populates="category")
-
-class Tag(Base):
-    __tablename__ = "tags"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, unique=True)
-    notes = relationship("Note", secondary=note_tag_association, back_populates="tags")
-
-class Note(Base):
-    __tablename__ = "notes"
-
-    id = Column(Integer, primary_key=True)
-    title = Column(String, nullable=False)
-    content = Column(String)
-    category_id = Column(Integer, ForeignKey("categories.id"))
-    category = relationship("Category", back_populates="notes")
-    tags = relationship("Tag", secondary=note_tag_association, back_populates="notes")
+    name = Column(String, unique=True, nullable=False)
+    expenses = relationship('Expense', back_populates='category')
