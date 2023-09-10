@@ -170,33 +170,19 @@ def edit():
         session.rollback()
         click.echo("Error: Invalid input or entity does not exist.")
 
-def delete():
-    entity = click.prompt("Select 'user' or 'expense'", type=click.Choice(["user", "expense"]))
-    try:
-        entity_id = click.prompt("Enter the ID of the entity to delete", type=int)
-        if entity == "user":
-            user = session.query(User).get(entity_id)
-            if user:
-                session.delete(user)
-                session.commit()
-                click.echo(f"User {user.id} deleted!")
-            else:
-                click.echo("User not found.")
-        elif entity == "expense":
-            expense = session.query(Expense).get(entity_id)
-            if expense:
-                session.delete(expense)
-                session.commit()
-                click.echo(f"Expense {expense.id} deleted!")
-            else:
-                click.echo("Expense not found.")
-    except SQLAlchemyError:
-        session.rollback()
-        click.echo("Error: Invalid input or entity does not exist.")
-
+# Modify the sort() function to sort expenses by category using bubble sort
 def sort():
     try:
-        expenses = session.query(Expense).order_by(Expense.category_id).all()
+        expenses = session.query(Expense).all()
+
+        # Sort expenses by category using bubble sort
+        n = len(expenses)
+        for i in range(n):
+            for j in range(0, n - i - 1):
+                if expenses[j].category_id > expenses[j + 1].category_id:
+                    # Swap expenses
+                    expenses[j], expenses[j + 1] = expenses[j + 1], expenses[j]
+
         click.echo("Expenses (sorted by category):")
         for expense in expenses:
             click.echo(f"{expense.id}: {expense.name}, ${expense.amount}, Category: {expense.category.name}")
