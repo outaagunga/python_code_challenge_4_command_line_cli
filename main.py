@@ -1,82 +1,122 @@
+import argparse
 import sys
-from lib.database import initialize_database
-from lib.commands import add_note, list_notes, view_note, edit_note, delete_note, clear_notes, NoteNotFoundError
+from lib.commands import add_note, list_notes, view_note, edit_note, delete_note, clear_notes, NoteNotFoundError, db_session
+
+def create_parser():
+    parser = argparse.ArgumentParser(description="CLI Note-Taking Application")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # 'add' subcommand
+    add_parser = subparsers.add_parser("add", help="Add a new note")
+
+    # 'list' subcommand
+    subparsers.add_parser("list", help="List all notes")
+
+    # 'view' subcommand
+    view_parser = subparsers.add_parser("view", help="View a note")
+    view_parser.add_argument("title", type=str, help="Title of the note to view")
+
+    # 'edit' subcommand
+    edit_parser = subparsers.add_parser("edit", help="Edit a note")
+    edit_parser.add_argument("title", type=str, help="Title of the note to edit")
+    edit_parser.add_argument("new_content", type=str, help="New content for the note")
+
+    # 'delete' subcommand
+    delete_parser = subparsers.add_parser("delete", help="Delete a note")
+    delete_parser.add_argument("title", type=str, help="Title of the note to delete")
+
+    # 'clear' subcommand
+    subparsers.add_parser("clear", help="Clear all notes")
+
+    # 'exit' subcommand
+    subparsers.add_parser("exit", help="Exit the application")
+
+    return parser
+
+def print_available_commands():
+    print("Available commands:")
+    print("  add    - Add a new note")
+    print("  list   - List all notes")
+    print("  view   - View a note")
+    print("  edit   - Edit a note")
+    print("  delete - Delete a note")
+    print("  clear  - Clear all notes")
+    print("  exit   - Exit the application")
+    print()
 
 def main():
-    db_session = initialize_database()
+    parser = create_parser()
+
+    # Print available commands initially
+    print_available_commands()
 
     while True:
-        print("\nAvailable commands:")
-        print("1. add - Add a new note")
-        print("2. list - List all notes")
-        print("3. view - View a note")
-        print("4. edit - Edit a note")
-        print("5. delete - Delete a note")
-        print("6. clear - Clear all notes")
-        print("7. exit - Exit the application")
-
+        # Read user input as a single line
         user_input = input("Enter a command: ").strip()
 
-        if user_input == "add":
-            print("\nAdding a new note:")
-            title = input("Enter note title: ").strip()
-            content = input("Enter note content: ").strip()
-            category = input("Enter category name: ").strip()
-            tags = input("Enter tags (comma-separated): ").strip().split(",")
+        if not user_input:
+            continue
 
-            if not title or not content or not category:
-                print("Error: Title, content, and category are required for a note.")
-            else:
-                add_note(title, content, category, tags)
+        # Split user input into command and arguments
+        user_args = user_input.split()
+        user_command = user_args[0]
 
-        elif user_input == "list":
-            print("\nListing all notes:")
-            list_notes()
-
-        elif user_input == "view":
-            title = input("Enter the title of the note to view: ").strip()
-            try:
-                content = view_note(title)
-                print(f"Content of '{title}':")
-                print(content)
-            except NoteNotFoundError as e:
-                print(str(e))
-
-        elif user_input == "edit":
-            title = input("Enter the title of the note to edit: ").strip()
-            try:
-                existing_content = view_note(title)
-                print(f"Current content of '{title}':")
-                print(existing_content)
-                new_content = input("Enter the new content: ").strip()
-                edit_note(title, new_content)
-                print(f"'{title}' edited successfully.")
-            except NoteNotFoundError as e:
-                print(str(e))
-
-        elif user_input == "delete":
-            title = input("Enter the title of the note to delete: ").strip()
-            try:
-                delete_note(title)
-                print(f"'{title}' deleted successfully.")
-            except NoteNotFoundError as e:
-                print(str(e))
-
-        elif user_input == "clear":
-            confirmation = input("Are you sure you want to clear all notes? (yes/no): ").strip().lower()
-            if confirmation == "yes":
-                clear_notes()
-                print("All notes cleared.")
-            else:
-                print("Clear operation canceled.")
-
-        elif user_input == "exit":
+        # Check if the user entered 'exit'
+        if user_command == 'exit':
             print("Exiting the application.")
             db_session.close()  # Close the database session before exiting
-            sys.exit(-1)  # Exit the application gracefully
+            sys.exit(0)  # Exit the application gracefully
 
+        if user_command == "add":
+            # Prompt the user for required arguments one at a time
+            title = input("Enter note title: ").strip()
+            content = input("Enter note content: ").strip()
+            category = input("Enter category: ").strip()
+            tags = input("Enter tags (comma-separated): ").strip()
+
+            tags = [tag.strip() for tag in tags.split(",")]
+
+            # Call the add_note function with the collected information
+            add_note(title, content, category, tags, session=db_session)
+            print("Note added successfully.")
         else:
-            print("Invalid command. Please try again.")
+            try:
+                args = parser.parse_args(user_args)
+            except SystemExit:
+                print("Invalid command. Please try again.")
+                continue
+
+            # Handle other commands (list, view, edit, delete, clear)
+            if args.command == "list":
+                list_notes(session=db_session)
+            elif args.command == "view":
+                try:
+                    content = view_note(args.title, session=db_session)
+                    print(f"Content of '{args.title}':")
+                    print(content)
+                except NoteNotFoundError as e:
+                    print(str(e))
+            elif args.command == "edit":
+                try:
+                    edit_note(args.title, args.new_content, session=db_session)
+                    print(f"'{args.title}' edited successfully.")
+                except NoteNotFoundError as e:
+                    print(str(e))
+            elif args.command == "delete":
+                try:
+                    delete_note(args.title, session=db_session)
+                    print(f"'{args.title}' deleted successfully.")
+                except NoteNotFoundError as e:
+                    print(str(e))
+            elif args.command == "clear":
+                confirmation = input("Are you sure you want to clear all notes? (yes/no): ").strip().lower()
+                if confirmation == "yes":
+                    clear_notes(session=db_session)
+                    print("All notes cleared.")
+                else:
+                    print("Clear operation canceled.")
+            else:
+                print("Invalid command. Please try again.")
 
 if __name__ == "__main__":
     main()
